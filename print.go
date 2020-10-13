@@ -19,9 +19,9 @@ package bmx
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/Brightspace/bmx/saml/identityProviders"
-
 	"github.com/Brightspace/bmx/saml/serviceProviders"
 	"github.com/Brightspace/bmx/saml/serviceProviders/aws"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -36,8 +36,9 @@ func init() {
 }
 
 const (
-	Bash       = "bash"
-	Powershell = "powershell"
+	Bash              = "bash"
+	Powershell        = "powershell"
+	CredentialProcess = "credential_process"
 )
 
 type PrintCmdOptions struct {
@@ -82,6 +83,8 @@ func printCommand(printOptions PrintCmdOptions, creds *sts.Credentials) string {
 		return printPowershell(creds)
 	case Bash:
 		return printBash(creds)
+	case CredentialProcess:
+		return printCredentialProcess(creds)
 	}
 	return printDefaultFormat(creds)
 }
@@ -92,4 +95,14 @@ func printPowershell(credentials *sts.Credentials) string {
 
 func printBash(credentials *sts.Credentials) string {
 	return fmt.Sprintf("export AWS_SESSION_TOKEN=%s\nexport AWS_ACCESS_KEY_ID=%s\nexport AWS_SECRET_ACCESS_KEY=%s", *credentials.SessionToken, *credentials.AccessKeyId, *credentials.SecretAccessKey)
+}
+
+func printCredentialProcess(credentials *sts.Credentials) string {
+	return fmt.Sprintf(`{
+	"Version": 1,
+	"AccessKeyId": "%s",
+	"SecretAccessKey": "%s",
+	"SessionToken": "%s", 
+	"Expiration": "%s"
+}`, *credentials.AccessKeyId, *credentials.SecretAccessKey, *credentials.SessionToken, credentials.Expiration.Format(time.RFC3339))
 }
